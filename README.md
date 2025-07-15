@@ -16,11 +16,15 @@ Before running `gCoSRNA`, make sure the following Python packages are installed:
 ## 🚀 Usage
 -----------------
 * The main script for prediction is gCoSRNA-predict.py. It takes two arguments:
-'''bash
-python gCoSRNA-predict.py $seq $sec
+* '''python
+* python gCoSRNA_main.py \
+  --seq GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA \
+  --sec "(((((((..((((........)))).((((.........)))).....(((((.......))))))))))))...." \
+  --model gCoSRNA_model.pkl
 '''
 * seq: RNA sequence (e.g., "GGACCUCCCGUCCUUGGACGGUCGAGCGAAAGCUUGUGAUUGGUCCG")
 * sec: RNA secondary structure in dot-bracket notation (e.g., "(((((..(((((....)))))..((((....))))......)))))")
+* model: the trained RF model (i.e., gCoSRNA_model.pkl). Please give the right path for the file.
 ## 📤 Output
 -----------------
 A list of predicted coaxially stacked stem pairs, such as:
@@ -31,3 +35,9 @@ A list of predicted coaxially stacked stem pairs, such as:
 
 ## 📄 Citation
 1. Li S, Xu, Q, Tan YL, Jiang J, YZ Shi, Zhang B. gCoSRNA: Generalizable Coaxial-Stacking Prediction for RNA Junctions Using Secondary Structure. BioRxiv, 2025.
+
+## 📬 Contact
+For questions, bug reports, or contributions, please contact:
+Ya-Zhou Shi
+School of Mathematics & Statistics, Wuhan Textile University
+📧 yzshi@wtu.edu.cn
