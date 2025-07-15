@@ -25,3 +25,9 @@ python gCoSRNA-predict.py $seq $sec
 -----------------
 A list of predicted coaxially stacked stem pairs, such as:
 * Predicted coaxial stacking pairs: H1-H2 (Each H# refers to a stem in the input structure, named from 5′ to 3′ order based on sequence position.)
+## Demo
+
+## Training
+
+## 📄 Citation
+1. Li S, Xu, Q, Tan YL, Jiang J, YZ Shi, Zhang B. gCoSRNA: Generalizable Coaxial-Stacking Prediction for RNA Junctions Using Secondary Structure. BioRxiv, 2025.
