@@ -30,11 +30,21 @@ Before running `gCoSRNA`, make sure the following Python packages are installed:
 A list of predicted coaxially stacked stem pairs, such as:
 * Predicted coaxial stacking pairs: H1-H2 (Each H# refers to a stem in the input structure, named from 5′ to 3′ order based on sequence position.)
 ## Demo
-
-## Training
+This package includes demo examples covering 2-way, 3-way, and 4-way RNA junctions. Each example includes:
+* The RNA sequence
+* The corresponding dot-bracket secondary structure
+* Output from the program, including identified loops, stems, extracted substructures, and predicted coaxial stacking
+## 🔧 Model Training (Random Forest)
+If you would like to retrain the model, a training script is provided.
+* Open the gCoSRNA-train.py file.
+* Locate the line marked with # ----- you need to change -----.
+* Modify the file path to point to your own TrainingData.xlsx file.
+* Run the script: python Train.py
+* After training, the model will be saved as: gCoSRNA_model.pkl
 
 ## 📄 Citation
 1. Li S, Xu, Q, Tan YL, Jiang J, YZ Shi, Zhang B. gCoSRNA: Generalizable Coaxial-Stacking Prediction for RNA Junctions Using Secondary Structure. BioRxiv, 2025.
+2. Laing C, Wen D, Wang JT, Schlick T. Predicting coaxial helical stacking in RNA junctions. Nucleic Acids Res, 2012;40(2):487-498.
 
 ## 📬 Contact
 For questions, bug reports, or contributions, please contact:
