@@ -29,7 +29,7 @@ Before running `gCoSRNA`, make sure the following Python packages are installed:
 -----------------
 A list of predicted coaxially stacked stem pairs, such as:
 * Predicted coaxial stacking pairs: H1-H2 (Each H# refers to a stem in the input structure, named from 5′ to 3′ order based on sequence position.)
-## Demo
+## 🧪 Demo
 This package includes demo examples covering 2-way, 3-way, and 4-way RNA junctions. Each example includes:
 * The RNA sequence
 * The corresponding dot-bracket secondary structure
