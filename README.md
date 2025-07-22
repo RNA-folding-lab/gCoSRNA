@@ -15,16 +15,20 @@ Before running `gCoSRNA`, make sure the following Python packages are installed:
 * Recommended: Use in a conda environment or virtualenv for clean dependency management
 ## 🚀 Usage
 -----------------
-* The main script for prediction is gCoSRNA-predict.py. It takes two arguments:
+1. Command-line Script
+* The main script for prediction is gCoSRNA-predict.py. It takes three arguments:
 * '''python
 * python gCoSRNA_main.py \
   --seq GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA \
   --sec "(((((((..((((........)))).((((.........)))).....(((((.......))))))))))))...." \
   --model gCoSRNA_model.pkl
 '''
-* seq: RNA sequence (e.g., "GGACCUCCCGUCCUUGGACGGUCGAGCGAAAGCUUGUGAUUGGUCCG")
-* sec: RNA secondary structure in dot-bracket notation (e.g., "(((((..(((((....)))))..((((....))))......)))))")
-* model: the trained RF model (i.e., gCoSRNA_model.pkl). Please give the right path for the file.
+* --seq: RNA sequence (e.g., "GGACCUCCCGUCCUUGGACGGUCGAGCGAAAGCUUGUGAUUGGUCCG")
+* --sec: RNA secondary structure in dot-bracket notation (e.g., "(((((..(((((....)))))..((((....))))......)))))")
+* --model: the trained RF model (i.e., gCoSRNA_model.pkl). Please give the right path for the file.
+2. Jupyter Notebook
+* You can also use the notebook version: gCoSRNA_predict.ipynb.
+* Simply open the notebook, modify the input RNA sequence and secondary structure in the designated cell, and run all cells to get the prediction results.
 ## 📤 Output
 -----------------
 A list of predicted coaxially stacked stem pairs, such as:
