@@ -1,0 +1,100 @@
+Note: This parser ignores pseudoknots and isolated base pairs.
+      Please ensure only standard nested base pairs use '()'.
+      Pseudoknots like '[', ']', '{', '}' are ignored.
+
+Hairpin Loops:
+{'range': (13, 20), 'sequence': 'AGUUGGGA'}
+{'range': (30, 38), 'sequence': 'ACUGAAGAU'}
+{'range': (53, 59), 'sequence': 'UUCGAUC'}
+
+Internal Loops:
+
+Bulge Loops:
+
+Multibranch Loops:
+{'stem': (6, 65), 'branches': [(7, 8, 'UA'), (25, 25, 'G'), (43, 47, 'AGGUC'), (65, 65, '')], 'branch_count': 4}
+
+5' Dangling End:
+
+3' Dangling End:
+{'range': (72, 75), 'sequence': 'ACCA'}
+
+=== Multibranch Substructure 1 ===
+Sequence:      GCGGAUUUAGCUCGAGCGCCAGCUGGAGGUCCUGUGCACAGAAUUCGC
+Dot-bracket:   (((((((..(((()))).(((()))).....((((())))))))))))
+Stems:
+  [(0, 71), (1, 70), (2, 69), (3, 68), (4, 67), (5, 66), (6, 65)]
+  [(9, 24), (10, 23), (11, 22), (12, 21)]
+  [(26, 42), (27, 41), (28, 40), (29, 39)]
+  [(48, 64), (49, 63), (50, 62), (51, 61), (52, 60)]
+Loop Info:     {'stem': (6, 65), 'branches': [(7, 8, 'UA'), (25, 25, 'G'), (43, 47, 'AGGUC'), (65, 65, '')], 'branch_count': 4}
+
+=== Pseudo Two-way Junction 1 ===
+Sequence:     GCGGAUUUAGCUCGAGCGAAUUCGC
+Dot-bracket:  (((((((..(((()))).)))))))
+Stems:        [0, 1]
+Loops:        [(65, 65, ''), (7, 8, 'UA'), (25, 25, 'G')]
+Between_loops:        [(7, 8, 'UA')]
+Features:
+  Loop lengths:           [0, 2, 1]
+  Loop A-runs:            [0, 1, 0]
+  Coaxial G:                 4.79
+  Stem1 G:                -6.07
+  Stem2 G:                -3.76
+  Stem lengths:           [7, 4]
+  Internal branch count:  2
+
+=== Pseudo Two-way Junction 2 ===
+Sequence:     UAGCUCGAGCGCCAGCUGGAGGUC
+Dot-bracket:  ..(((()))).(((()))).....
+Stems:        [1, 2]
+Loops:        [(7, 8, 'UA'), (25, 25, 'G'), (43, 47, 'AGGUC')]
+Between_loops:        [(25, 25, 'G')]
+Features:
+  Loop lengths:           [2, 1, 5]
+  Loop A-runs:            [1, 0, 1]
+  Coaxial G:                 -1.4
+  Stem1 G:                -3.76
+  Stem2 G:                -3.36
+  Stem lengths:           [4, 4]
+  Internal branch count:  2
+
+=== Pseudo Two-way Junction 3 ===
+Sequence:     GCCAGCUGGAGGUCCUGUGCACAGA
+Dot-bracket:  .(((()))).....((((())))))
+Stems:        [2, 3]
+Loops:        [(25, 25, 'G'), (43, 47, 'AGGUC'), (65, 65, '')]
+Between_loops:        [(43, 47, 'AGGUC')]
+Features:
+  Loop lengths:           [1, 5, 0]
+  Loop A-runs:            [0, 1, 0]
+  Coaxial G:                 2.58
+  Stem1 G:                -3.36
+  Stem2 G:                -4.45
+  Stem lengths:           [4, 5]
+  Internal branch count:  2
+
+=== Pseudo Two-way Junction 4 ===
+Sequence:     GCGGAUUUAAGGUCCUGUGCACAGAAUUCGC
+Dot-bracket:  (((((((.......((((())))))))))))
+Stems:        [3, 0]
+Loops:        [(43, 47, 'AGGUC'), (65, 65, ''), (7, 8, 'UA')]
+Between_loops:        [(65, 65, '')]
+Features:
+  Loop lengths:           [5, 0, 2]
+  Loop A-runs:            [1, 0, 1]
+  Coaxial G:                 -2.35
+  Stem1 G:                -4.45
+  Stem2 G:                -6.07
+  Stem lengths:           [5, 7]
+  Internal branch count:  2
+*****
+    id  Li-1  Li  Li+1  A(Li-1)  ...  G(Hi+1)  LHi  LHi+1  N_way  coaxial_prob
+0   1     0   2     1        0  ...    -3.76    7      4      2      0.048875
+1   2     2   1     5        1  ...    -3.36    4      4      2      0.796555
+2   3     1   5     0        0  ...    -4.45    4      5      2      0.021686
+3   4     5   0     2        1  ...    -6.07    5      7      2      0.925051
+
+[4 rows x 14 columns]
+Stem 0 and Stem 3 are predicted to be coaxially stacked.
+Stem 1 and Stem 2 are predicted to be coaxially stacked.
