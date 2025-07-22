@@ -1,0 +1,39 @@
+🧪 gCoSRNA Linux Demo
+
+This demo provides a quick example of how to use the gCoSRNA_main.py script for RNA coaxial stacking prediction under a Linux environment.
+📁 Files Included
+
+    example_seq.txt: Example RNA sequence
+
+    example_sec.txt: Example RNA secondary structure in dot-bracket notation
+
+    example_output.txt: Expected output for the provided example
+
+    gCoSRNA_main.py: Main prediction script
+
+    gCoSRNA_model.pkl: Trained Random Forest model
+
+🚀 How to Run
+
+You can run the demo in two ways from your Linux terminal:
+🔹 Option 1: Direct input via command-line
+* '''
+cd Demo  # Change to the path of your demo folder
+python gCoSRNA_main.py \
+  --seq GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA \
+  --sec "(((((((..((((........)))).((((.........)))).....(((((.......))))))))))))...." \
+  --model gCoSRNA_model.pkl
+'''
+🔹 Option 2: Input via text files
+* '''
+cd Demo  # Change to the path of your demo folder
+python gCoSRNA_main.py \
+  --seq_file example_seq.txt \
+  --sec_file example_sec.txt \
+  --model gCoSRNA_model.pkl
+* '''
+📤 Output
+
+    The prediction result will be printed in the terminal.
+
+    For reference, the expected output for the provided example is also saved in example_output.txt.
