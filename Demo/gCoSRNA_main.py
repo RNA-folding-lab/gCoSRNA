@@ -30,7 +30,7 @@ if __name__ == "__main__":
     else:
         raise ValueError("Please provide either --sec or --sec_file")
 
-    # predict
+    # 调用预测主函数
     predict_coaxial_stacking(
         sequence=seq,
         dot_bracket=sec,
