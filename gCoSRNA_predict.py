@@ -10,7 +10,8 @@ and finally assigns a consistent set of coaxial stacking pairs by resolving conf
 Output:
 A list of coaxially stacked stem pairs.
 """
-#from collections import deque, defaultdict
+from typing import List, Tuple, Dict, Union
+from collections import deque, defaultdict
 from draw_rna.ipynb_draw import draw_struct
 from math import log
 import math 
@@ -401,6 +402,7 @@ def is_self_complementary(chain1, chain2):
     n = len(chain1)
     return all(chain1[i] + chain2[n - 1 - i] in base_pair_set for i in range(n))
 
+
 def calculate_stem_free_energy(stem, sequence):
     """
     Calculate the free energy of an RNA stem based on base pair stacking,
@@ -428,10 +430,11 @@ def calculate_stem_free_energy(stem, sequence):
 
     # Stacking energies between consecutive base pairs
     for k in range(len(chain1) - 1):
+
         key = chain1[k] + chain2[k] + chain1[k+1] + chain2[k+1]      # Stack order may be ERROR
         energy += STACKING_ENERGY.get(key, 0.0)
 
-    if is_self_complementary(chain1, chain2): # Symmetry correction for self-complementary stems
+    if is_self_complementary(chain1,chain2): # Symmetry correction for self-complementary stems
         energy += SYMMETRY_CORRECTION
 
     return round(energy, 2)
@@ -442,6 +445,10 @@ def calculate_G(Li, terminal_pairs):
     Returns:
         float: Estimated coaxial stacking free energy (in kcal/mol).
     """
+    a = 9.3
+    b= 0
+    c = -0.6
+
     if terminal_pairs in STACKING_ENERGY:
         G0 = STACKING_ENERGY[terminal_pairs]
     elif terminal_pairs[0:2] in mismatch_para:
@@ -451,9 +458,9 @@ def calculate_G(Li, terminal_pairs):
     if Li <= 1:
         G = G0   
     elif 2 <= Li <= 6:
-        G = 9.3 - 0.3 * Li - 1.8 + G0
+        G = a + b * Li + 2*c
     else:
-        G = 9.3 - 3.6 + 1.1 * math.log(Li / 6) +G0
+        G = a + 6*b + 1.1 * math.log(Li / 6) + 2*c
     return round(G, 2)
 
 def compute_coaxial_stacking_energy(junction_bases, loop_length):
@@ -480,7 +487,7 @@ def find_terminal_pair_connected_to_loop(stem, loop_start, loop_end):
     """
     candidates = [stem[0], stem[-1]]  # Only consider terminal pairs
     for i, j in candidates:
-        #print(i,j)
+        print(i,j)
         if loop_start - 1 in (i, j) or loop_end + 1 in (i, j) or loop_start in (i,j) or loop_end in (i,j):
             if loop_start - 1 == i or loop_end + 1 == i or loop_start == i or loop_end == i:
                 return (i, j)  # i is loop-adjacent
@@ -583,7 +590,7 @@ def compute_pseudo_two_way_features(pseudo_sub, total_branch_count, full_stem_li
         stem2 = full_stem_list[stem_ids[1]]
         between_loops = pseudo_sub.get("between_loops", [])
         loops = pseudo_sub.get("loops", [])
-        #print("between_loops",between_loops)
+        print("between_loops",between_loops)
         if len(between_loops) == 1:
             loop_length = len(between_loops[0][2])
         elif len(between_loops) == 2:
@@ -775,38 +782,204 @@ def predict_coaxial_probabilities(pseudo_subs, model_path='gCoSRNA_model.pkl'):
     df['coaxial_prob'] = probs
     return df
 
-def assign_final_coaxial_stacking(pseudo_subs, prob_df, prob_threshold=0.42):
+def max_weight_matching_path(weights: List[float]) -> Tuple[float, List[Tuple[int,int]]]:
     """
-    Select the final set of coaxial stacking stem pairs based on predicted probabilities.
-
-    - Filters out pseudo structures with probability below a threshold;
-    - Ensures that each stem is used in at most one coaxial pair (greedy selection).
-
-    Returns a list of non-conflicting stem pairs predicted to be coaxially stacked.
+    Path case:
+    - weights: length m, representing edges (1,2),(2,3),...,(m,m+1)
+    - returns (max_weight_sum, list_of_pairs) where pairs use 1-based node indices
+    Complexity: O(m)
     """
-    # Extract stem pair information for each pseudo-substructure
-    stem_pairs = [tuple(sorted(sub["stems"])) for sub in pseudo_subs]
-    prob_df = prob_df.copy()
-    prob_df["stem_pair"] = stem_pairs
+    m = len(weights)
+    if m == 0:
+        return 0.0, []
+    n = m + 1 
+    dp = [0.0] * (n + 1) 
+    take = [False] * (n + 1) 
+    dp[0] = 0.0
+    dp[1] = 0.0
+    for i in range(2, n+1):
+        w = float(weights[i-2]) 
+        if dp[i-1] >= dp[i-2] + w:
+            dp[i] = dp[i-1]
+            take[i] = False
+        else:
+            dp[i] = dp[i-2] + w
+            take[i] = True
 
-    filtered_df = prob_df[prob_df["coaxial_prob"] >= prob_threshold].copy()
-    if filtered_df.empty:
-        return []
+    pairs = []
+    i = n
+    while i >= 2:
+        if take[i]:
+            pairs.append((i-1, i))
+            i -= 2
+        else:
+            i -= 1
+    pairs.reverse()
+    return dp[n], pairs
 
-    # Sort remaining predictions by descending probability
-    filtered_df.sort_values(by="coaxial_prob", ascending=False, inplace=True)
 
-    used_stems = set()
-    final_pairs = []
+def max_weight_matching_cycle(weights: List[float],threshold) -> Union[Tuple[float, List[Tuple[int,int]]], str]:
+    """
+    Corrected cycle DP with special cases:
+    - 3-way junction: if all weights < 0.5 → return "none"
+    - 4-way junction: if any weight < 0.5 → forbid that edge from being selected
+    """
+    n = len(weights)
+    if n == 0:
+        return 0.0, []
 
-    for _, row in filtered_df.iterrows():
-        s1, s2 = row["stem_pair"]
-        if s1 not in used_stems and s2 not in used_stems:
-            final_pairs.append((s1, s2))
-            used_stems.update([s1, s2])
+    if n == 3 and all(w < threshold for w in weights):
+        return 0,"none"
 
-    return final_pairs
+    if n == 4:
+        banned_edges = {i for i,w in enumerate(weights) if w < 0.25}
+        if len(banned_edges) == 4:
+            return 0,"none"
+        mod_weights = [(-1e9 if i in banned_edges else w) for i,w in enumerate(weights)]
+    else:
+        mod_weights = weights
 
+    if n == 1:
+        return float(weights[0]), [(1,2)]
+    if n == 2:
+        if weights[0] >= weights[1]:
+            return float(weights[0]), [(1,2)]
+        else:
+            return float(weights[1]), [(2,1)]
+
+    valA, pairsA = max_weight_matching_path(mod_weights[:-1])
+
+    if mod_weights[-1] < 0:
+        valB, pairsB = -1e9, []
+    else:
+        inner_weights = mod_weights[1 : n-2]
+        valB_inner, pairsB_inner = max_weight_matching_path(inner_weights)
+        pairsB = [(n, 1)] + [(a+1, b+1) for (a,b) in pairsB_inner]
+        valB = float(mod_weights[-1]) + valB_inner
+
+    if valA >= valB:
+        return valA, pairsA
+    else:
+        return valB, pairsB
+
+
+def assign_final_coaxial_stacking(pseudo_subs, Coaxial_prob_list, prob_threshold=0.42):
+    # print('pseudo_subs',pseudo_subs)
+    # print('Coaxial_prob_list',Coaxial_prob_list)
+
+    opt_sum,opt_pairs = max_weight_matching_cycle(Coaxial_prob_list,prob_threshold)
+
+    return opt_sum,opt_pairs
+
+
+from draw_rna.ipynb_draw import draw_struct
+from math import log
+import math 
+import pandas as pd
+import joblib
+import os
+
+# === MAIN: RNA 2D Structure Parsing & Substructure Extraction ===
+
+# === Example Sequences ===
+# # # Example 1: Four-way junction (nested)
+# sequence = "GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA"
+# dot_bracket = "(((((((..((((........)))).((((.........)))).....(((((.......))))))))))))...."
+
+# Example 2: Three-way junction
+# sequence = "GGACCUCCCGUCCUUGGACGGUCGAGCGAAAGCUUGUGAUUGGUCCG"
+# dot_bracket = "(((((..(((((....)))))..((((....))))......)))))"
+
+# Example 3: Pseudoknotted junction (non-nested regions marked by [], to be ignored)
+# sequence = "GGAUCAUAUAAUCGCGUGGAUAUGGCACGCAAGUUUCUACCGGGCACCGUAAAUGUCCGACUAUGGUCG"
+# dot_bracket = ".((((((((..(.(((((.....[[))))).)[.....)]((((((]].....)))))).[)))))))]"
+
+# Example 4: Hairpin with internal loop
+sequence = "GGCGUCAGGUCCGGAAGGAAGCAGCGCC"
+dot_bracket = "(((((....(((....)))....)))))"
+
+model_path = "gCoSRNA_model.pkl"  ##!!!change your model path
+## Visualize the structure
+draw_struct(sequence, dot_bracket)
+# === Base Pair Parsing ===
+print("Note: This parser ignores pseudoknots and isolated base pairs.")
+print("      Please ensure only standard nested base pairs use '()'.")
+print("      Pseudoknots like '[', ']', '{', '}' are ignored.\n")
+
+pairs = parse_dot_bracket(dot_bracket)
+stems = extract_stems(pairs)
+loop_info = identify_loops(sequence, dot_bracket, stems)
+
+# === Loop Summary ===
+print("Hairpin Loops:")
+for h in loop_info["hairpin"]:
+    print(h)
+
+print("\nInternal Loops:")
+for intr in loop_info["internal"]:
+    print(intr)
+print("\nBulge Loops:")
+for bul in loop_info["bulge"]:
+    print(bul)
+
+print("\nMultibranch Loops:")
+for m in loop_info["multibranch"]:
+    print(m)
+
+print("\n5' Dangling End:")
+for d5 in loop_info["dangling_5prime"]:
+    print(d5)
+
+print("\n3' Dangling End:")
+for d3 in loop_info["dangling_3prime"]:
+    print(d3)
+
+# === Extract Multibranch Substructures ===
+multibranch_substructures = extract_substructures(sequence, dot_bracket, stems, loop_info,'multibranch')
+
+for sub in multibranch_substructures:
+    print(f"\n=== Multibranch Substructure {sub['loop_id']} ===")
+    print("Sequence:     ", sub['sequence'])
+    print("Dot-bracket:  ", sub['dot_bracket'])
+    print("Stems:")
+    for stem in sub['stems']:
+        print(" ", stem)
+    print("Loop Info:    ", sub['loop_info'])
+
+# === Pseudo Two-way Junction Decomposition ===
+# We only demonstrate on the first multibranch loop substructure
+if multibranch_substructures:
+    sub = multibranch_substructures[0]
+    pseudo_two_way_subs = extract_pseudo_two_way_substructures_v2(sub, sequence, dot_bracket)
+
+    for i, s in enumerate(pseudo_two_way_subs, 1):
+        print(f"\n=== Pseudo Two-way Junction {i} ===")
+        print(f"Sequence:     {s['sequence']}")
+        print(f"Dot-bracket:  {s['dot_bracket']}")
+        print(f"Stems:        {s['stems']}")
+        print(f"Loops:        {s['loops']}")
+        print(f"Between_loops:        {s['between_loops']}")
+        print(f"Features:")
+        print(f"  Loop lengths:           {s['features']['loop_lengths']}")
+        print(f"  Loop A-runs:            {s['features']['loop_A_counts']}")
+        print(f"  Coaxial G:                 {s['features']['coaxial_dG']}")
+        print(f"  Stem1 G:                {s['features']['stem1_dG']}")
+        print(f"  Stem2 G:                {s['features']['stem2_dG']}")
+        print(f"  Stem lengths:           {s['features']['stem_lengths']}")
+        print(f"  Internal branch count:  {s['features']['internal_branch_count']}")
+    prob_df = predict_coaxial_probabilities(pseudo_two_way_subs, model_path)
+    #df = extract_pseudo_two_way_features_dataframe(pseudo_two_way_subs)
+    # print("*****\n",prob_df)
+    Coaxial_proba_list = prob_df['coaxial_prob'].tolist()
+    # print("Coaxial_proba_list",Coaxial_proba_list)
+    opt_sum,final_coaxial_pairs = assign_final_coaxial_stacking(pseudo_two_way_subs, Coaxial_proba_list, prob_threshold=0.42)
+    if final_coaxial_pairs != 'none':
+        for pair in final_coaxial_pairs:
+            print(f"Stem {pair[0]} and Stem {pair[1]} are predicted to be coaxially stacked.")
+    else:
+        print("No stem are predicted to be coaxially stacked.")
+
+        
 def bulge_or_internal_Print(substructures,type):
     for sub in substructures:
         print(f"\n=== {type} Loop Substructure {sub['loop_id']} ===")
@@ -821,105 +994,13 @@ def bulge_or_internal_Print(substructures,type):
         print("*****\n",prob_df)
         coaxial_prob = prob_df.iloc[0]['coaxial_prob']
         if coaxial_prob > 0.42:
-            print("The two stems in this {type} loop are predicted to be coaxially stacked.")
+            print(f"The two stems in this {type} loop are predicted to be coaxially stacked.")
         else:
-            print("The two stems in this {type} loop are predicted to be non-coaxial.")
+            print(f"The two stems in this {type} loop are predicted to be non-coaxial.")
+# === Extract bulge Loop Substructures ===
+bulge_substructures = extract_substructures(sequence, dot_bracket, stems, loop_info,'bulge')
+bulge_or_internal_Print(bulge_substructures,"Bulge")
 
-
-
-#from draw_rna.ipynb_draw import draw_struct
-from math import log
-import math 
-import pandas as pd
-import joblib
-import os
-
-def predict_coaxial_stacking(sequence, dot_bracket, model_path='gCoSRNA_model.pkl',visualize=False):
-    # === MAIN: RNA 2D Structure Parsing & Substructure Extraction ===
-    ## Visualize the structure
-    #if visualize==True:
-        #draw_struct(sequence, dot_bracket)
-        
-    # === Base Pair Parsing ===
-    print("Note: This parser ignores pseudoknots and isolated base pairs.")
-    print("      Please ensure only standard nested base pairs use '()'.")
-    print("      Pseudoknots like '[', ']', '{', '}' are ignored.\n")
-
-    pairs = parse_dot_bracket(dot_bracket)
-    stems = extract_stems(pairs)
-    loop_info = identify_loops(sequence, dot_bracket, stems)
-
-    # === Loop Summary ===
-    print("Hairpin Loops:")
-    for h in loop_info["hairpin"]:
-        print(h)
-
-    print("\nInternal Loops:")
-    for intr in loop_info["internal"]:
-        print(intr)
-    print("\nBulge Loops:")
-    for bul in loop_info["bulge"]:
-        print(bul)
-
-    print("\nMultibranch Loops:")
-    for m in loop_info["multibranch"]:
-        print(m)
-
-    print("\n5' Dangling End:")
-    for d5 in loop_info["dangling_5prime"]:
-        print(d5)
-
-    print("\n3' Dangling End:")
-    for d3 in loop_info["dangling_3prime"]:
-        print(d3)
-
-    # === Extract Multibranch Substructures ===
-    multibranch_substructures = extract_substructures(sequence, dot_bracket, stems, loop_info,'multibranch')
-
-    for sub in multibranch_substructures:
-        print(f"\n=== Multibranch Substructure {sub['loop_id']} ===")
-        print("Sequence:     ", sub['sequence'])
-        print("Dot-bracket:  ", sub['dot_bracket'])
-        print("Stems:")
-        for stem in sub['stems']:
-            print(" ", stem)
-        print("Loop Info:    ", sub['loop_info'])
-
-    # === Pseudo Two-way Junction Decomposition ===
-    # We only demonstrate on the first multibranch loop substructure
-    if multibranch_substructures:
-        sub = multibranch_substructures[0]
-        pseudo_two_way_subs = extract_pseudo_two_way_substructures_v2(sub, sequence, dot_bracket)
-
-        for i, s in enumerate(pseudo_two_way_subs, 1):
-            print(f"\n=== Pseudo Two-way Junction {i} ===")
-            print(f"Sequence:     {s['sequence']}")
-            print(f"Dot-bracket:  {s['dot_bracket']}")
-            print(f"Stems:        {s['stems']}")
-            print(f"Loops:        {s['loops']}")
-            print(f"Between_loops:        {s['between_loops']}")
-            print(f"Features:")
-            print(f"  Loop lengths:           {s['features']['loop_lengths']}")
-            print(f"  Loop A-runs:            {s['features']['loop_A_counts']}")
-            print(f"  Coaxial G:                 {s['features']['coaxial_dG']}")
-            print(f"  Stem1 G:                {s['features']['stem1_dG']}")
-            print(f"  Stem2 G:                {s['features']['stem2_dG']}")
-            print(f"  Stem lengths:           {s['features']['stem_lengths']}")
-            print(f"  Internal branch count:  {s['features']['internal_branch_count']}")
-        prob_df = predict_coaxial_probabilities(pseudo_two_way_subs, model_path)
-        #df = extract_pseudo_two_way_features_dataframe(pseudo_two_way_subs)
-        print("*****\n",prob_df)
-        final_coaxial_pairs = assign_final_coaxial_stacking(pseudo_two_way_subs, prob_df, prob_threshold=0.42)
-        for pair in final_coaxial_pairs:
-            print(f"Stem {pair[0]} and Stem {pair[1]} are predicted to be coaxially stacked.")
-
-    # === Extract bulge Loop Substructures ===
-    bulge_substructures = extract_substructures(sequence, dot_bracket, stems, loop_info,'bulge')
-    bulge_or_internal_Print(bulge_substructures,"Bulge")
-
-    # === Extract Internal Loop Substructures ===
-    internal_substructures = extract_substructures(sequence, dot_bracket, stems, loop_info,'internal')
-    bulge_or_internal_Print(internal_substructures,"Internal")
-
-
-    
+# === Extract Internal Loop Substructures ===
+internal_substructures = extract_substructures(sequence, dot_bracket, stems, loop_info,'internal')
+bulge_or_internal_Print(internal_substructures,"Internal")
